@@ -1,267 +1,489 @@
 # OpenBreweryDB Lakehouse Pipeline  
-**(Databricks | Medallion Architecture | DQ | Orchestration | Observability | Deployment)**
+### **Modern Data Engineering Project using Databricks, Unity Catalog, Delta Lake, Medallion Architecture & Data Quality Framework**
 
-This project implements a production-grade **Data Engineering pipeline** using:
+This project implements a complete **end-to-end Data Engineering pipeline** built entirely on **Databricks (Free Serverless Edition)**, using:
 
-- **Databricks Serverless (Free Edition)**
-- **Unity Catalog + Volumes**
-- **Delta Lake**
 - **Medallion Architecture (Bronze → Silver → Gold)**
-- **Incremental & Full Processing**
-- **Data Quality Framework**
-- **Orchestration (Workflows / Airflow-ready)**
-- **Observability + Alerts**
-- **Docker/Kubernetes Deployment Design**
+- **Unity Catalog (UC)** for governance
+- **Delta Lake** for storage and ACID transactions
+- **Volumes** for raw data storage
+- **Incremental & Full refresh pipelines**
+- **Data Quality framework (DQ Bronze, Silver, Gold)**
+- **Observability & auditing tables**
+- **Databricks Workflows orchestration**
+- **Optional Docker/Kubernetes deployment patterns**
 
-The pipeline ingests brewery data from:
-
-👉 https://www.openbrewerydb.org/
-
-It demonstrates end-to-end capabilities expected in enterprise-grade data platforms, including ingestion, governance, validation, monitoring, orchestration, and deployment.
-
----
-
-# Architecture
-
-## Design Goals
-
-- Implement a Lakehouse using **Delta Lake** for reliability and ACID guarantees  
-- Use **Medallion Architecture** for layered data refinement  
-- Store raw data in **Volumes** (Bronze)  
-- Store curated/aggregated data in **Unity Catalog managed tables** (Silver/Gold)  
-- Support **incremental** and **full-refresh** transforms  
-- Integrate a **robust Data Quality framework**  
-- Provide **orchestration + observability**  
-- Be deployable in **Docker/Kubernetes**
+Data source:  
+→ https://www.openbrewerydb.org/
 
 ---
 
-##  Architecture Blueprint
+# Architecture Overview
+
+### Goals
+
+- Deliver a production-grade Lakehouse pipeline  
+- Use **Delta Lake** for durability  
+- Use **Volumes** for raw ingestion  
+- Apply **Data Quality validation at all layers**  
+- Provide **incremental + full refresh** mechanisms  
+- Build workflow orchestration and governance  
+- Ensure observability and traceability  
+
+---
+
+## High-Level Architecture Diagram
 
 ```
-                    ┌─────────────────────────┐
-                    │   OpenBreweryDB API     │
-                    └──────────────┬──────────┘
-                                   │ REST JSON
-                                   ▼
-                  ┌────────────────────────────────┐
-                  │          BRONZE                │
-                  │ Delta Lake on Volumes          │
-                  │ Raw snapshots (_ingestion_date)│
-                  │ Append-only ingestion          │
-                  └──────────────┬─────────────────┘
-                                 │
-                   Read from Volume path
-                                 ▼
-                   ┌───────────────────────────┐
-                   │           SILVER          │
-                   │ Unity Catalog Managed     │
-                   │ Clean, standardized       │
-                   │ FULL Weekly + Incremental |
-                   └──────────────┬────────────┘
-                                  │
-                         MERGE INTO Silver
-                                  ▼
-                   ┌──────────────────────────────┐
-                   │             GOLD             │
-                   │ Business Aggregations        │
-                   │ Breweries per city/state/type│
-                   │ FULL Weekly + Incremental    │
-                   └──────────────────────────────┘
+                            ┌──────────────────────────┐
+                            │   OpenBreweryDB API      │
+                            └──────────────┬───────────┘
+                                           │
+                                 JSON from REST API
+                                           ▼
+                ┌─────────────────────────────────────────────┐
+                │               BRONZE (RAW)                  │
+                │ Delta files stored in Volumes               │
+                │ Path: /Volumes/<catalog>/<schema>/delta     │
+                │ Append-only ingestion                       │
+                └───────────────────┬─────────────────────────┘
+                                    │
+                                    ▼
+                ┌─────────────────────────────────────────────┐
+                │              SILVER (CLEAN)                 │
+                │ UC Managed Table                            │
+                │ Full weekly + incremental daily transforms  │
+                │ Normalized schema, cleaned fields           │
+                │ Latitude/Longitude kept as STRING           │
+                └───────────────────┬─────────────────────────┘
+                                    │
+                                    ▼
+                ┌─────────────────────────────────────────────┐
+                │              GOLD (AGGREGATED)              │
+                │ Aggregations: breweries per city/type/state │
+                │ Used for BI dashboards and analytics        │
+                └─────────────────────────────────────────────┘
 ```
 
-### Storage Layout
-
-| Layer | Storage | Description |
-|-------|---------|-------------|
-| Bronze | Volume Delta Lake | Raw data snapshots |
-| Silver | UC Managed | Clean business entities |
-| Gold | UC Managed | Aggregated KPIs |
-
 ---
 
-# Orchestration Strategy
+# Project Structure
 
-The pipeline is orchestrated using **Databricks Workflows**, supporting:
-
-- Task dependencies  
-- Automated retries  
-- Failure handling  
-- Notifications  
-- Serverless execution  
-
-The solution provides **two pipelines**:  
-✔ Daily (incremental) from TUE to SUN  
-✔ Weekly (full + DQ) at MON
-
----
-
-## Daily Workflow (Incremental)
-
-```
-Bronze Ingest → Silver Incremental → Gold Incremental
+```text
+/src
+  /bronze
+    bronze_ingest_delta.py
+  /silver
+    silver_transform_full.py
+    silver_transform_incremental.py
+  /gold
+    gold_transform_full.py
+    gold_transform_incremental.py
+  /dq
+    dq_bronze.py
+    dq_silver.py
+    dq_gold.py
+    dq_runner.py
+config.py
+README.md
 ```
 
-Purpose:
-
-- Fast, lightweight processing  
-- Updates the curated and aggregated layers  
-- No Data Quality (DQ) check to reduce operational overhead
-
 ---
 
-## Weekly Workflow (Full + DQ)
+# Bronze Layer (RAW)
 
-```
-Bronze Ingest (weekly)
-       ↓
-Silver FULL
-       ↓
-Gold FULL
-       ↓
-DQ Runner (Bronze + Silver + Gold)
-       ↓
-Bronze Cleanup
+### Storage:
+Stored as **Delta files inside a Volume**, not as a UC table.
+
+Path example:
+
+```text
+/Volumes/brewery_prod/bronze/delta
 ```
 
-Purpose:
+### Features:
+- Fetches paginated data from OpenBreweryDB API  
+- Normalizes schema dynamically  
+- Adds ingestion metadata: `_source`, `_ingestion_ts`, `_ingestion_date`  
+- Written in append mode  
+- **Not registered** as a UC table  
 
-- Rebuild Silver and Gold entirely  
-- Run full platform-wide Data Quality checks  
-- Clean Bronze snapshots with retention window  
-
----
-
-This demonstrates understanding of:
-
-- Task retries  
-- SLA monitoring  
-- Failure callbacks  
-- Distributed scheduling  
+This preserves raw, immutable snapshots and fully decouples Bronze from UC.
 
 ---
 
-#  Data Quality Framework (DQ)
+# Silver Layer (CLEAN)
 
-This solution implements Data Quality across all layers using multiple dimensions:
+### Source:
+Reads directly from **Volume Delta files**, not from a UC Bronze table.
 
----
+### Features:
+- Weekly **full refresh** (`silver_full`)  
+- Daily **incremental** (`silver_incremental`)  
+- Deduplication by `id`  
+- Standardization:
+  - `country` → UPPERCASE  
+  - `city`, `state_province` → InitCap  
+  - `brewery_type` → lowercase  
+- Forces `latitude` and `longitude` to **STRING**  
+  → avoids malformed values causing cast issues  
+- Produces a **Unity Catalog managed table**:
 
-##  DQ Dimensions Implemented
+```text
+brewery_prod.silver.brewery_clean
+```
 
-| Dimension | Bronze | Silver | Gold |
-|-----------|--------|--------|------|
-| Freshness | ✔ | ✔ | — |
-| Completeness | ✔ | ✔ | ✔ |
-| Schema Drift | ✔ | — | — |
-| Uniqueness | ✔ | ✔ | — |
-| Validity | ✔ | ✔ | ✔ |
-| Consistency | — | ✔ | ✔ |
-
----
-
-## Bronze DQ
-
-Checks include:
-
-- Schema drift detection  
-- Required fields (`id`, `name`) not null  
-- Uniqueness per snapshot  
-- Freshness validation  
-- Volume anomaly detection (empty ingestion)  
+Silver is the main curated entity layer for analytics.
 
 ---
 
-## Silver DQ  
+# Gold Layer (AGGREGATED)
 
-Silver validations include:
+### Features:
+- Aggregates breweries by:
+  - `country`
+  - `state_province`
+  - `city`
+  - `brewery_type`
+- Supports **full** and **incremental** refresh
+- Produces a UC managed table:
 
-- Unique ID  
-- Completeness of key business fields  
-- Valid brewery type values  
-- Proper formatting (country uppercase, city standardized)  
-- Valid latitude/longitude range using:
+```text
+brewery_prod.gold.brewery_agg
+```
+
+Gold is the KPI layer used for dashboards and analytical queries.
+
+---
+
+# Data Quality Framework
+
+Each layer has its own DQ module:
+
+| Layer  | File         | Purpose                                                 |
+|--------|--------------|---------------------------------------------------------|
+| Bronze | `dq_bronze.py` | Raw completeness, schema drift, duplicates, freshness |
+| Silver | `dq_silver.py` | Uniqueness, validity, formatting, geolocation checks  |
+| Gold   | `dq_gold.py`   | Valid counts, grouping keys, schema consistency       |
+
+All DQ functions follow the same pattern:
+
+```python
+passed: bool
+checks: dict[str, bool]
+errors: dict[str, DataFrame]
+```
+
+- `passed` → overall result for the layer  
+- `checks` → each rule’s status  
+- `errors` → a DataFrame per rule holding the failing rows  
+
+This enables detailed debugging, rich observability, and strong governance.
+
+---
+
+# DQ Runner
+
+The `dq_runner.py` orchestrates all Data Quality checks:
+
+1. Reads **Bronze** from Volume Delta (`BRONZE_PATH/delta`)
+2. Reads **Silver** and **Gold** from Unity Catalog
+3. Executes:
+   - `dq_check_bronze`
+   - `dq_check_silver`
+   - `dq_check_gold`
+4. Logs results to two UC tables:
+
+### 1️⃣ `brewery_prod.quality.dq_audit`
+
+Stores per-check results:
+
+```text
+layer | check_name | status | timestamp | details
+```
+
+### 2️⃣ `brewery_prod.quality.dq_errors`
+
+Stores failing records as JSON strings:
+
+```text
+layer | check_name | error_record | timestamp
+```
+
+### Serverless-safe implementation
+
+The DQ Runner:
+
+- **Does not** use RDDs  
+- **Does not** call `.toJSON()` on the driver  
+- Uses `F.to_json(F.struct("*"))` to serialize rows in a distributed way  
+- Is fully compatible with Databricks Serverless Free Edition  
+
+---
+
+# Observability & Monitoring
+
+With `dq_audit` and `dq_errors` you can build:
+
+- Quality dashboards  
+- Alerts (Slack, email)  
+- Trend analysis (how checks evolve over time)  
+- Root-cause investigations based on actual failing rows  
+
+Examples:
 
 ```sql
-try_cast(latitude AS double)
-```
-
-This avoids pipeline failures due to API inconsistencies.
-
----
-
-## Gold DQ
-
-Checks include:
-
-- No negative aggregates  
-- No null grouping keys  
-- Country format consistency  
-- Structural schema validation  
-
----
-
-## DQ Runner (Weekly)
-
-The *dq_runner.py* orchestrates all quality checks and stores results into:
-
-```
-<catalog>.quality.dq_audit
-```
-
-Audit fields:
-
-| layer | check_name | status | timestamp | details |
-
-This enables governance, alerting, trend analysis, and failure diagnostics.
-
----
-
-# Observability & Alerts
-
-Enterprise observability is achieved using:
-
----
-
-## DQ Audit Table
-
-Centralized quality tracking.
-
-Example query:
-
-```sql
+-- Latest failures
 SELECT *
 FROM brewery_prod.quality.dq_audit
 WHERE status = false
 ORDER BY timestamp DESC;
 ```
 
----
-
-## Workflow Monitoring
-
-Databricks natively provides:
-
-- Task execution logs  
-- Runtime graphs  
-- Failure traces  
-- Retry history  
-- Audit logs  
-
----
-
-## Alerts (Email, Slack, Teams)
-
-Databricks Workflow notifications:
-
-- On failure  
-- On timeout  
-- On retry  
-
-Example Slack webhook:
-
-```json
-{ "text": "🚨 Brewery Pipeline Failure: check dq_audit table." }
+```sql
+-- Raw error samples
+SELECT layer, check_name, error_record, timestamp
+FROM brewery_prod.quality.dq_errors
+ORDER BY timestamp DESC
+LIMIT 100;
 ```
 
 ---
+
+# Orchestration with Databricks Workflows
+
+The solution uses **two Workflows**: **Daily Incremental** and **Weekly Full + DQ**.
+
+---
+
+## 🗓 Daily Workflow (Incremental)
+
+Sequence:
+
+```text
+Bronze Ingest → Silver Incremental → Gold Incremental
+```
+
+- Updates the data incrementally  
+- No DQ to keep it lightweight  
+- Ideal for daily refresh with minimal overhead  
+
+Suggested schedule:
+
+```text
+0 0 0 ? * SUN,TUE,WED,THU,FRI,SAT * (UTC+00:00 — UTC)
+(run at 12 AM every day, except Monday)
+```
+
+---
+
+## 🗓 Weekly Workflow (Full + DQ)
+
+Sequence:
+
+```text
+Bronze Ingest → Silver Full → Gold Full → DQ Runner → Bronze Cleanup
+```
+
+- Rebuilds curated and aggregated data  
+- Runs full Data Quality checks across all layers  
+- Optionally cleans old Bronze snapshots  
+
+Suggested schedule:
+
+```text
+0 3 * * MON
+(run at 12 AM every Monday)
+```
+
+Each workflow task is configured as:
+
+- **Task type:** Run a Python file  
+- **Runtime:** Databricks 14.x Serverless  
+- **Source:** Workspace file path, e.g.  
+  `Workspace/Users/<user>/brewery/silver/silver_transform_full.py`
+
+---
+
+# Deploying the Project on Databricks Free Edition
+
+This section describes how to get everything running **inside Databricks Free Edition**, considering its constraints:
+
+- No DBFS root for general storage  
+- Volumes stored under Unity Catalog  
+- UC managed tables  
+- Serverless jobs and workflows  
+
+---
+
+## 1️⃣ Create Catalog and Schemas
+
+In a Databricks SQL query:
+
+```sql
+CREATE CATALOG brewery_prod;
+
+CREATE SCHEMA IF NOT EXISTS brewery_prod.bronze;
+CREATE SCHEMA IF NOT EXISTS brewery_prod.silver;
+CREATE SCHEMA IF NOT EXISTS brewery_prod.gold;
+CREATE SCHEMA IF NOT EXISTS brewery_prod.quality;
+
+USE CATALOG brewery_prod;
+```
+
+---
+
+## 2️⃣ Create Volume for Bronze
+
+```sql
+CREATE VOLUME IF NOT EXISTS brewery_prod.bronze;
+```
+
+Bronze files will be stored under:
+
+```text
+/Volumes/brewery_prod/bronze/delta
+```
+
+---
+
+## 3️⃣ Upload Project Files to the Workspace
+
+Navigate to:
+
+```text
+Workspace → Users → <your_user>/brewery/
+```
+
+Upload:
+
+```text
+bronze/
+silver/
+gold/
+dq/
+config.py
+```
+
+Ensure that the imports inside your Python files (e.g., `from config import ...`) match the folder structure.
+
+---
+
+## 4️⃣ Configure `config.py`
+
+Example configuration:
+
+```python
+CATALOG = "brewery_prod"
+
+BRONZE_SCHEMA = "bronze"
+SILVER_SCHEMA = "silver"
+GOLD_SCHEMA = "gold"
+DQ_SCHEMA = "quality"
+
+BRONZE_PATH = "/Volumes/brewery_prod/bronze"
+
+OPENBREWERYDB_BASE_URL = "https://api.openbrewerydb.org/v1/breweries"
+PER_PAGE = 200
+```
+
+---
+
+## 5️⃣ Create the Daily Workflow (Incremental)
+
+1. Go to **Workflows** → **Create Job**  
+2. Add tasks:
+
+### Task 1 — Bronze Ingest
+- Type: **Run a Python file**
+- File: `brewery/bronze/bronze_ingest_delta.py`
+
+### Task 2 — Silver Incremental
+- Depends on: **Bronze Ingest**
+- File: `brewery/silver/silver_transform_incremental.py`
+
+### Task 3 — Gold Incremental
+- Depends on: **Silver Incremental**
+- File: `brewery/gold/gold_transform_incremental.py`
+
+3. Set schedule: `0 0 0 ? * SUN,TUE,WED,THU,FRI,SAT *` (12 AM daily, exept Monday)
+
+---
+
+## 6️⃣ Create the Weekly Workflow (Full + DQ)
+
+1. Create another Job in Workflows  
+
+2. Add tasks:
+
+### Task 1 — Bronze Full Ingest
+- File: `brewery/bronze/bronze_ingest_delta.py`
+
+### Task 2 — Silver Full
+- Depends on Bronze Full
+- File: `brewery/silver/silver_transform_full.py`
+
+### Task 3 — Gold Full
+- Depends on Silver Full
+- File: `brewery/gold/gold_transform_full.py`
+
+### Task 4 — DQ Runner
+- Depends on Gold Full
+- File: `brewery/dq/dq_runner.py`
+
+### Task 5 — Bronze Cleanup (optional)
+- Depends on DQ Runner
+- File: `brewery/bronze/bronze_cleanup.py` (if implemented)
+
+3. Set schedule: `0 0 * * MON` (12 AM every Monday)
+
+---
+
+## 7️⃣ Enable Workflow Notifications
+
+In each workflow:
+
+- Configure email, Slack or webhook notifications on:
+  - Failure  
+  - Timeout  
+  - Retry exhaustion  
+
+This provides operational alerting and reliability.
+
+---
+
+## 8️⃣ Validate End-to-End
+
+Once everything is wired:
+
+### Check Bronze data:
+
+```python
+spark.read.format("delta").load("/Volumes/brewery_prod/bronze/delta").show(10)
+```
+
+### Check Silver table:
+
+```sql
+SELECT * FROM brewery_prod.silver.brewery_clean LIMIT 20;
+```
+
+### Check Gold table:
+
+```sql
+SELECT * FROM brewery_prod.gold.brewery_agg LIMIT 20;
+```
+
+### Check DQ tables:
+
+```sql
+SELECT * FROM brewery_prod.quality.dq_audit ORDER BY timestamp DESC;
+SELECT * FROM brewery_prod.quality.dq_errors ORDER BY timestamp DESC;
+```
+
+---
+
+# 👤 Author
+
+**Fernando Florencio dos Santos**  
+_Data Engineering Portfolio Project_
