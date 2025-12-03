@@ -72,7 +72,8 @@ Data source:
 ```text
 /src
   /bronze
-    bronze_ingest_delta.py
+    bronze_ingest.py
+    bronze_clean_up.py
   /silver
     silver_transform_full.py
     silver_transform_incremental.py
