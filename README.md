@@ -91,7 +91,7 @@ The pipeline is orchestrated using **Databricks Workflows**, supporting:
 - Serverless execution  
 
 The solution provides **two pipelines**:  
-✔ Daily (incremental) from TUE to SUN 
+✔ Daily (incremental) from TUE to SUN  
 ✔ Weekly (full + DQ) at MON
 
 ---
