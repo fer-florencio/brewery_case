@@ -36,7 +36,7 @@ It demonstrates end-to-end capabilities expected in enterprise-grade data platfo
 
 ---
 
-## 🧱 Architecture Blueprint
+##  Architecture Blueprint
 
 ```
                     ┌─────────────────────────┐
@@ -80,7 +80,7 @@ It demonstrates end-to-end capabilities expected in enterprise-grade data platfo
 
 ---
 
-# 🔄 Orchestration Strategy
+#  Orchestration Strategy
 
 The pipeline is orchestrated using **Databricks Workflows**, supporting:
 
@@ -96,7 +96,7 @@ The solution provides **two pipelines**:
 
 ---
 
-## 🗓 Daily Workflow (Incremental)
+##  Daily Workflow (Incremental)
 
 ```
 Bronze Ingest → Silver Incremental → Gold Incremental
@@ -110,7 +110,7 @@ Purpose:
 
 ---
 
-## 🗓 Weekly Workflow (Full + DQ)
+##  Weekly Workflow (Full + DQ)
 
 ```
 Bronze Ingest (weekly)
@@ -159,13 +159,13 @@ This demonstrates understanding of:
 
 ---
 
-# 🧪 Data Quality Framework (DQ)
+#  Data Quality Framework (DQ)
 
 This solution implements Data Quality across all layers using multiple dimensions:
 
 ---
 
-## 📐 DQ Dimensions Implemented
+##  DQ Dimensions Implemented
 
 | Dimension | Bronze | Silver | Gold |
 |-----------|--------|--------|------|
@@ -178,7 +178,7 @@ This solution implements Data Quality across all layers using multiple dimension
 
 ---
 
-## 🟫 Bronze DQ
+## Bronze DQ
 
 Checks include:
 
@@ -190,7 +190,7 @@ Checks include:
 
 ---
 
-## 🟦 Silver DQ  
+## Silver DQ  
 *(Updated with `try_cast` to avoid failures on malformed latitude/longitude)*
 
 Silver validations include:
@@ -209,7 +209,7 @@ This avoids pipeline failures due to API inconsistencies.
 
 ---
 
-## 🟡 Gold DQ
+## Gold DQ
 
 Checks include:
 
@@ -220,7 +220,7 @@ Checks include:
 
 ---
 
-## 🧾 DQ Runner (Weekly)
+## DQ Runner (Weekly)
 
 The *dq_runner.py* orchestrates all quality checks and stores results into:
 
@@ -242,7 +242,7 @@ Enterprise observability is achieved using:
 
 ---
 
-## 1️⃣ DQ Audit Table
+## DQ Audit Table
 
 Centralized quality tracking.
 
@@ -257,7 +257,7 @@ ORDER BY timestamp DESC;
 
 ---
 
-## 2️⃣ Workflow Monitoring
+## Workflow Monitoring
 
 Databricks natively provides:
 
@@ -269,7 +269,7 @@ Databricks natively provides:
 
 ---
 
-## 3️⃣ Alerts (Email, Slack, Teams)
+## Alerts (Email, Slack, Teams)
 
 Databricks Workflow notifications:
 
@@ -285,7 +285,7 @@ Example Slack webhook:
 
 ---
 
-# 🚀 Deployment (Docker / Kubernetes)
+# Deployment (Docker / Kubernetes)
 
 Even though Databricks handles infrastructure, the project includes a modular deployment design for environments where portability is required.
 
@@ -308,7 +308,7 @@ CMD ["python", "bronze/bronze_ingest_delta.py"]
 
 ---
 
-## ☸ Kubernetes (CronJobs)
+## Kubernetes (CronJobs)
 
 Daily:
 
@@ -332,18 +332,3 @@ Provides:
 - Infrastructure as code  
 
 ---
-
-# 🎯 Final Result
-
-This project delivers a full-featured **Lakehouse Data Platform**:
-
-### ✔ Scalable architecture  
-### ✔ Robust ingestion with schema normalization  
-### ✔ Comprehensive DQ checks across all Medallion layers  
-### ✔ Incremental + full-refresh pipelines  
-### ✔ Orchestration with alerts & observability  
-### ✔ Deployment-ready design for Docker/K8s  
-### ✔ Governed data in Unity Catalog  
-### ✔ Automated cleanup and retention policies  
-
-Perfect for showcasing **Data Engineering, Data Quality, Architecture, and DevOps** capabilities in a modern data platform.
