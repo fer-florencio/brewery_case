@@ -80,7 +80,7 @@ It demonstrates end-to-end capabilities expected in enterprise-grade data platfo
 
 ---
 
-#  Orchestration Strategy
+# Orchestration Strategy
 
 The pipeline is orchestrated using **Databricks Workflows**, supporting:
 
@@ -96,7 +96,7 @@ The solution provides **two pipelines**:
 
 ---
 
-##  Daily Workflow (Incremental)
+## Daily Workflow (Incremental)
 
 ```
 Bronze Ingest → Silver Incremental → Gold Incremental
@@ -110,7 +110,7 @@ Purpose:
 
 ---
 
-##  Weekly Workflow (Full + DQ)
+## Weekly Workflow (Full + DQ)
 
 ```
 Bronze Ingest (weekly)
@@ -132,7 +132,7 @@ Purpose:
 
 ---
 
-## 🎛 Alternative Orchestration (Airflow, Mage, Luigi)
+## Alternative Orchestration (Airflow, Mage, Luigi)
 
 This project can also be orchestrated using external tools.
 
@@ -236,7 +236,7 @@ This enables governance, alerting, trend analysis, and failure diagnostics.
 
 ---
 
-# 👀 Observability & Alerts
+# Observability & Alerts
 
 Enterprise observability is achieved using:
 
@@ -291,7 +291,7 @@ Even though Databricks handles infrastructure, the project includes a modular de
 
 ---
 
-## 🐳 Docker
+## Docker
 
 Example Dockerfile:
 
