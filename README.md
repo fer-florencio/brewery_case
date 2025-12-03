@@ -209,16 +209,6 @@ Stores failing records as JSON strings:
 ```text
 layer | check_name | error_record | timestamp
 ```
-
-### Serverless-safe implementation
-
-The DQ Runner:
-
-- **Does not** use RDDs  
-- **Does not** call `.toJSON()` on the driver  
-- Uses `F.to_json(F.struct("*"))` to serialize rows in a distributed way  
-- Is fully compatible with Databricks Serverless Free Edition  
-
 ---
 
 # Observability & Monitoring
