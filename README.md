@@ -173,7 +173,6 @@ Checks include:
 ---
 
 ## Silver DQ  
-*(Updated with `try_cast` to avoid failures on malformed latitude/longitude)*
 
 Silver validations include:
 
