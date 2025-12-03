@@ -1,6 +1,6 @@
-#OpenBreweryDB Lakehouse Pipeline
+# OpenBreweryDB Lakehouse Pipeline
 
-##(Databricks | Medallion Architecture | DQ | Orchestration | Observability | Deployment)
+## (Databricks | Medallion Architecture | DQ | Orchestration | Observability | Deployment)
 
 This project implements a production-grade Data Engineering pipeline using:
 
