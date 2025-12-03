@@ -132,24 +132,6 @@ Purpose:
 
 ---
 
-## Alternative Orchestration (Airflow, Mage, Luigi)
-
-This project can also be orchestrated using external tools.
-
-### Example Airflow DAG
-
-```python
-with DAG("brewery_weekly"):
-
-    bronze = PythonOperator(...)
-    silver_full = PythonOperator(...)
-    gold_full = PythonOperator(...)
-    dq = PythonOperator(...)
-    cleanup = PythonOperator(...)
-
-    bronze >> silver_full >> gold_full >> dq >> cleanup
-```
-
 This demonstrates understanding of:
 
 - Task retries  
