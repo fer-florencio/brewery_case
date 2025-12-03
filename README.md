@@ -1,4 +1,4 @@
-# 📘 OpenBreweryDB Lakehouse Pipeline  
+# OpenBreweryDB Lakehouse Pipeline  
 **(Databricks | Medallion Architecture | DQ | Orchestration | Observability | Deployment)**
 
 This project implements a production-grade **Data Engineering pipeline** using:
@@ -21,9 +21,9 @@ It demonstrates end-to-end capabilities expected in enterprise-grade data platfo
 
 ---
 
-# 🏗️ Architecture
+# Architecture
 
-## 🎯 Design Goals
+## Design Goals
 
 - Implement a Lakehouse using **Delta Lake** for reliability and ACID guarantees  
 - Use **Medallion Architecture** for layered data refinement  
@@ -44,15 +44,15 @@ It demonstrates end-to-end capabilities expected in enterprise-grade data platfo
                     └──────────────┬──────────┘
                                    │ REST JSON
                                    ▼
-                   ┌───────────────────────────┐
-                   │          BRONZE           │
-                   │ Delta Lake on Volumes     │
-                   │ Raw snapshots (_ingestion_date)
-                   │ Append-only ingestion     │
-                   └──────────────┬────────────┘
-                                  │
+                  ┌────────────────────────────────┐
+                  │          BRONZE                │
+                  │ Delta Lake on Volumes          │
+                  │ Raw snapshots (_ingestion_date)│
+                  │ Append-only ingestion          │
+                  └──────────────┬─────────────────┘
+                                 │
                    Read from Volume path
-                                  ▼
+                                 ▼
                    ┌───────────────────────────┐
                    │           SILVER          │
                    │ Unity Catalog Managed     │
@@ -62,7 +62,7 @@ It demonstrates end-to-end capabilities expected in enterprise-grade data platfo
                                   │
                          MERGE INTO Silver
                                   ▼
-                   ┌─────────────────────────────┐
+                   ┌──────────────────────────────┐
                    │             GOLD             │
                    │ Business Aggregations        │
                    │ Breweries per city/state/type│
