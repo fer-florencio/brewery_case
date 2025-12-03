@@ -282,7 +282,7 @@ Bronze Ingest → Silver Full → Gold Full → DQ Runner → Bronze Cleanup
 Suggested schedule:
 
 ```text
-0 3 * * MON
+0 0 * * MON
 (run at 12 AM every Monday)
 ```
 
