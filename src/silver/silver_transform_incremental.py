@@ -1,3 +1,7 @@
+import sys, os
+sys.path.append(os.getcwd())
+sys.path.append(os.path.dirname(os.getcwd()))
+
 from pyspark.sql import SparkSession, functions as F
 from config import (
     CATALOG,

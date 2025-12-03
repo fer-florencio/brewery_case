@@ -1,5 +1,6 @@
-# dq_runner.py
-# Runs Data Quality checks for Bronze → Silver → Gold
+import sys, os
+sys.path.append(os.getcwd())
+sys.path.append(os.path.dirname(os.getcwd()))
 
 from pyspark.sql import SparkSession, Row
 from pyspark.sql import functions as F

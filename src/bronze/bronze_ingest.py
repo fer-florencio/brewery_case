@@ -1,3 +1,7 @@
+import sys, os
+sys.path.append(os.getcwd())
+sys.path.append(os.path.dirname(os.getcwd()))
+
 import requests
 from datetime import datetime, timezone
 from pyspark.sql import SparkSession
